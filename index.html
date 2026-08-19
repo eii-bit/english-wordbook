@@ -3,71 +3,305 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>英単語帳</title>
+  <title>自動翻訳つき英単語帳</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: #f5f7fa;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: #f0f2f5;
       color: #333;
       padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+      max-width: 500px;
+      margin: 0 auto;
     }
     h1 {
-      margin-bottom: 20px;
-      color: #2c3e50;
+      text-align: center;
+      color: #1a73e8;
+      margin-bottom: 16px;
+      font-size: 1.4rem;
     }
-    .card-container {
-      width: 100%;
-      max-width: 500px;
+    .tabs {
       display: flex;
-      flex-direction: column;
-      gap: 12px;
+      gap: 8px;
+      margin-bottom: 16px;
     }
-    .card {
-      background: #ffffff;
-      border-radius: 10px;
-      padding: 16px 20px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    .tab-btn {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      background: #e0e0e0;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: bold;
+      cursor: pointer;
+      color: #555;
+    }
+    .tab-btn.active {
+      background: #1a73e8;
+      color: #fff;
+    }
+    .panel {
+      display: none;
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .panel.active { display: block; }
+    
+    /* 入力エリア */
+    .input-form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    input[type="text"] {
+      flex: 1;
+      padding: 12px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+    }
+    .btn-add {
+      padding: 12px 16px;
+      border: none;
+      background: #34a853;
+      color: white;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-add:disabled { background: #999; }
+
+    /* 単語一覧 */
+    .word-list { display: flex; flex-direction: column; gap: 10px; }
+    .word-card {
       display: flex;
       justify-content: space-between;
       align-items: center;
+      padding: 12px 16px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #1a73e8;
     }
-    .word {
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #1a0dab;
+    .word-info { display: flex; flex-direction: column; gap: 2px; }
+    .en { font-weight: bold; font-size: 1.1rem; color: #202124; }
+    .ja { font-size: 0.9rem; color: #5f6368; }
+    .btn-del {
+      background: #ff4d4f;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
     }
-    .meaning {
+
+    /* クイズ画面 */
+    .quiz-box { text-align: center; }
+    .quiz-word { font-size: 1.8rem; font-weight: bold; color: #1a73e8; margin: 15px 0 25px; }
+    .options { display: grid; grid-template-columns: 1fr; gap: 10px; }
+    .opt-btn {
+      padding: 14px;
+      border: 2px solid #e0e0e0;
+      background: #f9f9f9;
+      border-radius: 8px;
       font-size: 1rem;
-      color: #555;
+      font-weight: bold;
+      cursor: pointer;
     }
+    .opt-btn.correct { background: #d4edda; border-color: #28a745; color: #155724; }
+    .opt-btn.wrong { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+    .btn-next {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background: #1a73e8;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      display: none;
+    }
+    .empty-msg { color: #888; text-align: center; padding: 20px 0; }
   </style>
 </head>
 <body>
 
-  <h1>My English Wordbook</h1>
+  <h1>マイ英単語帳</h1>
 
-  <div class="card-container">
-    <div class="card">
-      <span class="word">apple</span>
-      <span class="meaning">りんご</span>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('list')">単語一覧</button>
+    <button class="tab-btn" onclick="switchTab('quiz')">復習クイズ</button>
+  </div>
+
+  <!-- 単語一覧パネル -->
+  <div id="panel-list" class="panel active">
+    <div class="input-form">
+      <input type="text" id="word-input" placeholder="英単語を入力 (例: apple)">
+      <button class="btn-add" id="add-btn" onclick="addWord()">自動翻訳して追加</button>
     </div>
-    <div class="card">
-      <span class="word">book</span>
-      <span class="meaning">本</span>
-    </div>
-    <div class="card">
-      <span class="word">study</span>
-      <span class="meaning">勉強する</span>
+    <div id="word-list" class="word-list"></div>
+  </div>
+
+  <!-- クイズパネル -->
+  <div id="panel-quiz" class="panel">
+    <div class="quiz-box">
+      <div id="quiz-area">
+        <p style="color: #666; font-size: 0.9rem;">正しい日本語訳を選んでください</p>
+        <div class="quiz-word" id="quiz-target-word">-</div>
+        <div class="options" id="quiz-options"></div>
+        <button class="btn-next" id="next-btn" onclick="nextQuestion()">次の問題へ</button>
+      </div>
     </div>
   </div>
 
+  <script>
+    let words = JSON.parse(localStorage.getItem('my_wordbook_data') || '[]');
+    let currentQuizTarget = null;
+
+    // 初期化
+    renderList();
+
+    // タブ切り替え
+    function switchTab(tab) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+
+      if (tab === 'list') {
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+        document.getElementById('panel-list').classList.add('active');
+        renderList();
+      } else {
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+        document.getElementById('panel-quiz').classList.add('active');
+        startQuiz();
+      }
+    }
+
+    // 単語追加 (自動翻訳)
+    async function addWord() {
+      const input = document.getElementById('word-input');
+      const addBtn = document.getElementById('add-btn');
+      const text = input.value.trim();
+
+      if (!text) return;
+
+      addBtn.disabled = true;
+      addBtn.innerText = "翻訳中...";
+
+      try {
+        const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ja`);
+        const data = await res.json();
+        const translation = data.responseData.translatedText || "（訳が見つかりませんでした）";
+
+        words.unshift({ id: Date.now(), en: text, ja: translation });
+        saveWords();
+        input.value = "";
+        renderList();
+      } catch (e) {
+        alert("翻訳に失敗しました。ネットワークを確認してください。");
+      } finally {
+        addBtn.disabled = false;
+        addBtn.innerText = "自動翻訳して追加";
+      }
+    }
+
+    // 保存
+    function saveWords() {
+      localStorage.setItem('my_wordbook_data', JSON.stringify(words));
+    }
+
+    // 削除
+    function deleteWord(id) {
+      words = words.filter(w => w.id !== id);
+      saveWords();
+      renderList();
+    }
+
+    // 一覧描画
+    function renderList() {
+      const listEl = document.getElementById('word-list');
+      if (words.length === 0) {
+        listEl.innerHTML = '<div class="empty-msg">単語がまだありません。上から追加してみよう！</div>';
+        return;
+      }
+      listEl.innerHTML = words.map(w => `
+        <div class="word-card">
+          <div class="word-info">
+            <span class="en">${escapeHtml(w.en)}</span>
+            <span class="ja">${escapeHtml(w.ja)}</span>
+          </div>
+          <button class="btn-del" onclick="deleteWord(${w.id})">削除</button>
+        </div>
+      `).join('');
+    }
+
+    // クイズ開始
+    function startQuiz() {
+      const area = document.getElementById('quiz-area');
+      if (words.length === 0) {
+        area.innerHTML = '<div class="empty-msg">クイズを始めるには、まず単語を追加してください！</div>';
+        return;
+      }
+      nextQuestion();
+    }
+
+    function nextQuestion() {
+      document.getElementById('next-btn').style.display = 'none';
+      const optionsEl = document.getElementById('quiz-options');
+      optionsEl.innerHTML = '';
+
+      // ランダムに1つターゲットを選択
+      currentQuizTarget = words[Math.floor(Math.random() * words.length)];
+      document.getElementById('quiz-target-word').innerText = currentQuizTarget.en;
+
+      // 選択肢（ダミーと混ぜる）
+      const dummyPool = ['りんご', '本', '学校', '勉強する', '未来', '時間', '友達', '努力', '成功', '挑戦'];
+      let choices = [currentQuizTarget.ja];
+
+      // 他の登録済み単語の訳をダミーに追加
+      const otherJa = words.filter(w => w.id !== currentQuizTarget.id).map(w => w.ja);
+      const combinedPool = [...new Set([...otherJa, ...dummyPool])].filter(j => j !== currentQuizTarget.ja);
+
+      // 3つダミーを選ぶ
+      combinedPool.sort(() => 0.5 - Math.random());
+      for (let i = 0; i < 3 && i < combinedPool.length; i++) {
+        choices.push(combinedPool[i]);
+      }
+
+      // シャッフル
+      choices.sort(() => 0.5 - Math.random());
+
+      choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'opt-btn';
+        btn.innerText = choice;
+        btn.onclick = () => checkAnswer(btn, choice);
+        optionsEl.appendChild(btn);
+      });
+    }
+
+    function checkAnswer(selectedBtn, chosen) {
+      const allBtns = document.querySelectorAll('.opt-btn');
+      allBtns.forEach(b => b.disabled = true);
+
+      if (chosen === currentQuizTarget.ja) {
+        selectedBtn.classList.add('correct');
+      } else {
+        selectedBtn.classList.add('wrong');
+        allBtns.forEach(b => {
+          if (b.innerText === currentQuizTarget.ja) b.classList.add('correct');
+        });
+      }
+      document.getElementById('next-btn').style.display = 'inline-block';
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+  </script>
 </body>
 </html>
