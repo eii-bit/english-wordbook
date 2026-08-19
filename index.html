@@ -95,8 +95,11 @@ function displayWords() {
         card.className = "card";
 
         card.innerHTML = `
-            <div class="word">${escapeHTML(item.word)}</div>
-            <div class="meaning">${escapeHTML(item.meaning)}</div>
+        card.innerHTML = `
+    <div class="word">${escapeHTML(item.word)}</div>
+    <div class="meaning">${escapeHTML(item.meaning)}</div>
+    <button onclick="deleteWord(${index})">削除</button>
+`;
         `;
 
         list.appendChild(card);
