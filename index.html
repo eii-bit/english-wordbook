@@ -108,7 +108,13 @@ function displayWords() {
 
 
 async function addWord() {
-
+function deleteWord(index) {
+    if (confirm("この単語を削除しますか？")) {
+        words.splice(index, 1);
+        localStorage.setItem("words", JSON.stringify(words));
+        displayWords();
+    }
+}
     const input = document.getElementById("wordInput");
     const button = document.getElementById("addButton");
 
