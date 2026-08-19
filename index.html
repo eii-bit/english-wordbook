@@ -32,16 +32,12 @@ input {
 }
 
 button {
-    padding: 12px 18px;
+    padding: 10px 15px;
     font-size: 16px;
     border: none;
     border-radius: 10px;
     background: #333;
     color: white;
-}
-
-button:disabled {
-    opacity: 0.5;
 }
 
 .card {
@@ -52,7 +48,7 @@ button:disabled {
 }
 
 .word {
-    font-size: 30px;
+    font-size: 28px;
     font-weight: bold;
 }
 
@@ -61,8 +57,9 @@ button:disabled {
     font-size: 20px;
 }
 
-.loading {
-    color: #777;
+.delete {
+    margin-top: 15px;
+    background: #d33;
 }
 </style>
 </head>
@@ -73,7 +70,7 @@ button:disabled {
 
 <div class="input-area">
     <input id="wordInput" placeholder="英単語を入力">
-    <button id="addButton" onclick="addWord()">追加</button>
+    <button onclick="addWord()">追加</button>
 </div>
 
 <div id="wordList"></div>
@@ -88,64 +85,45 @@ function displayWords() {
 
     list.innerHTML = "";
 
-    words.forEach((item) => {
+    words.forEach((item, index) => {
 
         const card = document.createElement("div");
 
         card.className = "card";
 
         card.innerHTML = `
-        card.innerHTML = `
-    <div class="word">${escapeHTML(item.word)}</div>
-    <div class="meaning">${escapeHTML(item.meaning)}</div>
-    <button onclick="deleteWord(${index})">削除</button>
-`;
+            <div class="word">${escapeHTML(item.word)}</div>
+            <div class="meaning">${escapeHTML(item.meaning)}</div>
+            <button class="delete" onclick="deleteWord(${index})">
+                この単語を削除
+            </button>
         `;
 
         list.appendChild(card);
     });
 }
 
-
 async function addWord() {
-function deleteWord(index) {
-    if (confirm("この単語を削除しますか？")) {
-        words.splice(index, 1);
-        localStorage.setItem("words", JSON.stringify(words));
-        displayWords();
-    }
-}
+
     const input = document.getElementById("wordInput");
-    const button = document.getElementById("addButton");
 
     const word = input.value.trim();
 
     if (word === "") return;
 
-    button.disabled = true;
-    button.textContent = "検索中";
+    const url =
+        "https://api.mymemory.translated.net/get?q="
+        + encodeURIComponent(word)
+        + "&langpair=en|ja";
 
     try {
 
-        const url =
-            "https://api.mymemory.translated.net/get?q="
-            + encodeURIComponent(word)
-            + "&langpair=en|ja";
-
         const response = await fetch(url);
-
-        if (!response.ok) {
-            throw new Error("API error");
-        }
-
         const data = await response.json();
 
-        let meaning =
-            data.responseData?.translatedText;
-
-        if (!meaning) {
-            meaning = "日本語訳を取得できませんでした";
-        }
+        const meaning =
+            data.responseData?.translatedText
+            || "日本語訳を取得できませんでした";
 
         words.unshift({
             word: word,
@@ -160,18 +138,23 @@ function deleteWord(index) {
 
     } catch (error) {
 
-        alert("日本語訳を取得できませんでした。もう一度試してください。");
-
-        console.error(error);
-
-    } finally {
-
-        button.disabled = false;
-        button.textContent = "追加";
+        alert("日本語訳を取得できませんでした。");
 
     }
 }
 
+function deleteWord(index) {
+
+    const answer = confirm("この単語を削除しますか？");
+
+    if (!answer) return;
+
+    words.splice(index, 1);
+
+    localStorage.setItem("words", JSON.stringify(words));
+
+    displayWords();
+}
 
 function escapeHTML(text) {
 
@@ -181,7 +164,6 @@ function escapeHTML(text) {
 
     return div.innerHTML;
 }
-
 
 displayWords();
 
