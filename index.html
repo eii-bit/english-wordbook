@@ -2,23 +2,25 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>自動翻訳つき英単語帳</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>マイ英単語帳</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: #f0f2f5;
       color: #333;
-      padding: 20px;
+      padding: 16px;
+      padding-bottom: calc(20px + env(safe-area-inset-bottom));
       max-width: 500px;
       margin: 0 auto;
+      -webkit-tap-highlight-color: transparent;
     }
     h1 {
       text-align: center;
       color: #1a73e8;
       margin-bottom: 16px;
-      font-size: 1.4rem;
+      font-size: 1.3rem;
     }
     .tabs {
       display: flex;
@@ -30,7 +32,7 @@
       padding: 12px;
       border: none;
       background: #e0e0e0;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 0.95rem;
       font-weight: bold;
       cursor: pointer;
@@ -43,13 +45,13 @@
     .panel {
       display: none;
       background: #fff;
-      padding: 20px;
-      border-radius: 12px;
+      padding: 16px;
+      border-radius: 14px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.06);
     }
     .panel.active { display: block; }
     
-    /* 入力エリア */
+    /* 入力フォーム (iPhoneズーム防止でfont-size 16px) */
     .input-form {
       display: flex;
       gap: 8px;
@@ -59,17 +61,18 @@
       flex: 1;
       padding: 12px;
       border: 1px solid #ccc;
-      border-radius: 8px;
-      font-size: 1rem;
+      border-radius: 10px;
+      font-size: 16px;
       outline: none;
     }
     .btn-add {
-      padding: 12px 16px;
+      padding: 12px 14px;
       border: none;
       background: #34a853;
       color: white;
-      border-radius: 8px;
+      border-radius: 10px;
       font-weight: bold;
+      font-size: 0.9rem;
       cursor: pointer;
       white-space: nowrap;
     }
@@ -81,9 +84,9 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 16px;
+      padding: 12px 14px;
       background: #f8f9fa;
-      border-radius: 8px;
+      border-radius: 10px;
       border-left: 4px solid #1a73e8;
     }
     .word-info { display: flex; flex-direction: column; gap: 2px; }
@@ -93,21 +96,21 @@
       background: #ff4d4f;
       color: white;
       border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
+      padding: 8px 12px;
+      border-radius: 8px;
       cursor: pointer;
       font-size: 0.8rem;
     }
 
     /* クイズ画面 */
     .quiz-box { text-align: center; }
-    .quiz-word { font-size: 1.8rem; font-weight: bold; color: #1a73e8; margin: 15px 0 25px; }
+    .quiz-word { font-size: 1.8rem; font-weight: bold; color: #1a73e8; margin: 15px 0 20px; }
     .options { display: grid; grid-template-columns: 1fr; gap: 10px; }
     .opt-btn {
       padding: 14px;
       border: 2px solid #e0e0e0;
       background: #f9f9f9;
-      border-radius: 8px;
+      border-radius: 10px;
       font-size: 1rem;
       font-weight: bold;
       cursor: pointer;
@@ -116,14 +119,39 @@
     .opt-btn.wrong { background: #f8d7da; border-color: #dc3545; color: #721c24; }
     .btn-next {
       margin-top: 15px;
-      padding: 10px 20px;
+      padding: 12px 24px;
       background: #1a73e8;
       color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 10px;
       font-weight: bold;
+      font-size: 1rem;
       cursor: pointer;
       display: none;
+      width: 100%;
+    }
+
+    /* データ同期セクション */
+    .sync-box {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #eee;
+    }
+    .sync-title {
+      font-size: 0.85rem;
+      color: #666;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .sync-btns { display: flex; gap: 8px; }
+    .btn-sync {
+      flex: 1;
+      padding: 8px;
+      background: #f0f0f0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      cursor: pointer;
     }
     .empty-msg { color: #888; text-align: center; padding: 20px 0; }
   </style>
@@ -143,7 +171,17 @@
       <input type="text" id="word-input" placeholder="英単語を入力 (例: apple)">
       <button class="btn-add" id="add-btn" onclick="addWord()">自動翻訳して追加</button>
     </div>
+
     <div id="word-list" class="word-list"></div>
+
+    <!-- 端末間データ移行（iPad ⇔ iPhone） -->
+    <div class="sync-box">
+      <div class="sync-title">iPad / iPhone 間のデータ共有</div>
+      <div class="sync-btns">
+        <button class="btn-sync" onclick="exportData()">データをコピー</button>
+        <button class="btn-sync" onclick="importData()">データを読み込み</button>
+      </div>
+    </div>
   </div>
 
   <!-- クイズパネル -->
@@ -162,10 +200,8 @@
     let words = JSON.parse(localStorage.getItem('my_wordbook_data') || '[]');
     let currentQuizTarget = null;
 
-    // 初期化
     renderList();
 
-    // タブ切り替え
     function switchTab(tab) {
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
@@ -181,7 +217,6 @@
       }
     }
 
-    // 単語追加 (自動翻訳)
     async function addWord() {
       const input = document.getElementById('word-input');
       const addBtn = document.getElementById('add-btn');
@@ -202,26 +237,23 @@
         input.value = "";
         renderList();
       } catch (e) {
-        alert("翻訳に失敗しました。ネットワークを確認してください。");
+        alert("翻訳に失敗しました。");
       } finally {
         addBtn.disabled = false;
         addBtn.innerText = "自動翻訳して追加";
       }
     }
 
-    // 保存
     function saveWords() {
       localStorage.setItem('my_wordbook_data', JSON.stringify(words));
     }
 
-    // 削除
     function deleteWord(id) {
       words = words.filter(w => w.id !== id);
       saveWords();
       renderList();
     }
 
-    // 一覧描画
     function renderList() {
       const listEl = document.getElementById('word-list');
       if (words.length === 0) {
@@ -239,7 +271,7 @@
       `).join('');
     }
 
-    // クイズ開始
+    /* クイズ機能 */
     function startQuiz() {
       const area = document.getElementById('quiz-area');
       if (words.length === 0) {
@@ -254,25 +286,20 @@
       const optionsEl = document.getElementById('quiz-options');
       optionsEl.innerHTML = '';
 
-      // ランダムに1つターゲットを選択
       currentQuizTarget = words[Math.floor(Math.random() * words.length)];
       document.getElementById('quiz-target-word').innerText = currentQuizTarget.en;
 
-      // 選択肢（ダミーと混ぜる）
       const dummyPool = ['りんご', '本', '学校', '勉強する', '未来', '時間', '友達', '努力', '成功', '挑戦'];
       let choices = [currentQuizTarget.ja];
 
-      // 他の登録済み単語の訳をダミーに追加
       const otherJa = words.filter(w => w.id !== currentQuizTarget.id).map(w => w.ja);
       const combinedPool = [...new Set([...otherJa, ...dummyPool])].filter(j => j !== currentQuizTarget.ja);
 
-      // 3つダミーを選ぶ
       combinedPool.sort(() => 0.5 - Math.random());
       for (let i = 0; i < 3 && i < combinedPool.length; i++) {
         choices.push(combinedPool[i]);
       }
 
-      // シャッフル
       choices.sort(() => 0.5 - Math.random());
 
       choices.forEach(choice => {
@@ -296,7 +323,39 @@
           if (b.innerText === currentQuizTarget.ja) b.classList.add('correct');
         });
       }
-      document.getElementById('next-btn').style.display = 'inline-block';
+      document.getElementById('next-btn').style.display = 'block';
+    }
+
+    /* データ移行（エクスポート / インポート） */
+    function exportData() {
+      if (words.length === 0) {
+        alert("引き継ぐ単語がありません。");
+        return;
+      }
+      const jsonStr = JSON.stringify(words);
+      navigator.clipboard.writeText(jsonStr).then(() => {
+        alert("単語データをクリップボードにコピーしました！\n別の端末（iPhone等）で「データを読み込み」を押して貼り付けてください。");
+      }).catch(() => {
+        prompt("以下のコードをすべてコピーしてください:", jsonStr);
+      });
+    }
+
+    function importData() {
+      const input = prompt("コピーした単語データをここに貼り付けてください:");
+      if (!input) return;
+      try {
+        const importedWords = JSON.parse(input);
+        if (Array.isArray(importedWords)) {
+          words = importedWords;
+          saveWords();
+          renderList();
+          alert("単語データを正常に読み込みました！");
+        } else {
+          throw new Error();
+        }
+      } catch (e) {
+        alert("データの読み込みに失敗しました。正しいコードを入力してください。");
+      }
     }
 
     function escapeHtml(str) {
