@@ -1,173 +1,73 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>My English Wordbook</title>
-
-<style>
-body {
-    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-    max-width: 650px;
-    margin: auto;
-    padding: 20px;
-    background: #f5f5f5;
-}
-
-h1 {
-    text-align: center;
-}
-
-.input-area {
-    display: flex;
-    gap: 8px;
-}
-
-input {
-    flex: 1;
-    padding: 14px;
-    font-size: 18px;
-    border: 1px solid #ccc;
-    border-radius: 10px;
-}
-
-button {
-    padding: 10px 15px;
-    font-size: 16px;
-    border: none;
-    border-radius: 10px;
-    background: #333;
-    color: white;
-}
-
-.card {
-    background: white;
-    padding: 20px;
-    margin-top: 15px;
-    border-radius: 15px;
-}
-
-.word {
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.meaning {
-    margin-top: 10px;
-    font-size: 20px;
-}
-
-.delete {
-    margin-top: 15px;
-    background: #d33;
-}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>英単語帳</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f5f7fa;
+      color: #333;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #2c3e50;
+    }
+    .card-container {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 10px;
+      padding: 16px 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .word {
+      font-size: 1.2rem;
+      font-weight: bold;
+      color: #1a0dab;
+    }
+    .meaning {
+      font-size: 1rem;
+      color: #555;
+    }
+  </style>
 </head>
-
 <body>
 
-<h1>📚 My English Wordbook</h1>
+  <h1>My English Wordbook</h1>
 
-<div class="input-area">
-    <input id="wordInput" placeholder="英単語を入力">
-    <button onclick="addWord()">追加</button>
-</div>
-
-<div id="wordList"></div>
-
-<script>
-
-let words = JSON.parse(localStorage.getItem("words")) || [];
-
-function displayWords() {
-
-    const list = document.getElementById("wordList");
-
-    list.innerHTML = "";
-
-    words.forEach((item, index) => {
-
-        const card = document.createElement("div");
-
-        card.className = "card";
-
-        card.innerHTML = `
-            <div class="word">${escapeHTML(item.word)}</div>
-            <div class="meaning">${escapeHTML(item.meaning)}</div>
-            <button class="delete" onclick="deleteWord(${index})">
-                この単語を削除
-            </button>
-        `;
-
-        list.appendChild(card);
-    });
-}
-
-async function addWord() {
-
-    const input = document.getElementById("wordInput");
-
-    const word = input.value.trim();
-
-    if (word === "") return;
-
-    const url =
-        "https://api.mymemory.translated.net/get?q="
-        + encodeURIComponent(word)
-        + "&langpair=en|ja";
-
-    try {
-
-        const response = await fetch(url);
-        const data = await response.json();
-
-        const meaning =
-            data.responseData?.translatedText
-            || "日本語訳を取得できませんでした";
-
-        words.unshift({
-            word: word,
-            meaning: meaning
-        });
-
-        localStorage.setItem("words", JSON.stringify(words));
-
-        input.value = "";
-
-        displayWords();
-
-    } catch (error) {
-
-        alert("日本語訳を取得できませんでした。");
-
-    }
-}
-
-function deleteWord(index) {
-
-    const answer = confirm("この単語を削除しますか？");
-
-    if (!answer) return;
-
-    words.splice(index, 1);
-
-    localStorage.setItem("words", JSON.stringify(words));
-
-    displayWords();
-}
-
-function escapeHTML(text) {
-
-    const div = document.createElement("div");
-
-    div.textContent = text;
-
-    return div.innerHTML;
-}
-
-displayWords();
-
-</script>
+  <div class="card-container">
+    <div class="card">
+      <span class="word">apple</span>
+      <span class="meaning">りんご</span>
+    </div>
+    <div class="card">
+      <span class="word">book</span>
+      <span class="meaning">本</span>
+    </div>
+    <div class="card">
+      <span class="word">study</span>
+      <span class="meaning">勉強する</span>
+    </div>
+  </div>
 
 </body>
 </html>
