@@ -7,8 +7,8 @@
 
 <style>
 body {
-    font-family: sans-serif;
-    max-width: 600px;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    max-width: 650px;
     margin: auto;
     padding: 20px;
     background: #f5f5f5;
@@ -18,33 +18,51 @@ h1 {
     text-align: center;
 }
 
+.input-area {
+    display: flex;
+    gap: 8px;
+}
+
 input {
-    width: 70%;
-    padding: 12px;
-    font-size: 16px;
+    flex: 1;
+    padding: 14px;
+    font-size: 18px;
+    border: 1px solid #ccc;
+    border-radius: 10px;
 }
 
 button {
-    padding: 12px;
+    padding: 12px 18px;
     font-size: 16px;
-    cursor: pointer;
+    border: none;
+    border-radius: 10px;
+    background: #333;
+    color: white;
+}
+
+button:disabled {
+    opacity: 0.5;
 }
 
 .card {
     background: white;
     padding: 20px;
-    margin-top: 20px;
-    border-radius: 12px;
+    margin-top: 15px;
+    border-radius: 15px;
 }
 
 .word {
-    font-size: 28px;
+    font-size: 30px;
     font-weight: bold;
 }
 
 .meaning {
     margin-top: 10px;
     font-size: 20px;
+}
+
+.loading {
+    color: #777;
 }
 </style>
 </head>
@@ -53,9 +71,9 @@ button {
 
 <h1>📚 My English Wordbook</h1>
 
-<div>
+<div class="input-area">
     <input id="wordInput" placeholder="英単語を入力">
-    <button onclick="addWord()">追加</button>
+    <button id="addButton" onclick="addWord()">追加</button>
 </div>
 
 <div id="wordList"></div>
@@ -70,40 +88,91 @@ function displayWords() {
 
     list.innerHTML = "";
 
-    words.forEach((item, index) => {
+    words.forEach((item) => {
 
         const card = document.createElement("div");
 
         card.className = "card";
 
         card.innerHTML = `
-            <div class="word">${item.word}</div>
-            <div class="meaning">${item.meaning}</div>
+            <div class="word">${escapeHTML(item.word)}</div>
+            <div class="meaning">${escapeHTML(item.meaning)}</div>
         `;
 
         list.appendChild(card);
     });
 }
 
-function addWord() {
+
+async function addWord() {
 
     const input = document.getElementById("wordInput");
+    const button = document.getElementById("addButton");
 
     const word = input.value.trim();
 
     if (word === "") return;
 
-    words.push({
-        word: word,
-        meaning: "日本語訳をここに追加"
-    });
+    button.disabled = true;
+    button.textContent = "検索中";
 
-    localStorage.setItem("words", JSON.stringify(words));
+    try {
 
-    input.value = "";
+        const url =
+            "https://api.mymemory.translated.net/get?q="
+            + encodeURIComponent(word)
+            + "&langpair=en|ja";
 
-    displayWords();
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error("API error");
+        }
+
+        const data = await response.json();
+
+        let meaning =
+            data.responseData?.translatedText;
+
+        if (!meaning) {
+            meaning = "日本語訳を取得できませんでした";
+        }
+
+        words.unshift({
+            word: word,
+            meaning: meaning
+        });
+
+        localStorage.setItem("words", JSON.stringify(words));
+
+        input.value = "";
+
+        displayWords();
+
+    } catch (error) {
+
+        alert("日本語訳を取得できませんでした。もう一度試してください。");
+
+        console.error(error);
+
+    } finally {
+
+        button.disabled = false;
+        button.textContent = "追加";
+
+    }
 }
+
+
+function escapeHTML(text) {
+
+    const div = document.createElement("div");
+
+    div.textContent = text;
+
+    return div.innerHTML;
+}
+
 
 displayWords();
 
