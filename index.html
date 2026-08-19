@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My English Wordbook</title>
+
+<style>
+body {
+    font-family: sans-serif;
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+    background: #f5f5f5;
+}
+
+h1 {
+    text-align: center;
+}
+
+input {
+    width: 70%;
+    padding: 12px;
+    font-size: 16px;
+}
+
+button {
+    padding: 12px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.card {
+    background: white;
+    padding: 20px;
+    margin-top: 20px;
+    border-radius: 12px;
+}
+
+.word {
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.meaning {
+    margin-top: 10px;
+    font-size: 20px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📚 My English Wordbook</h1>
+
+<div>
+    <input id="wordInput" placeholder="英単語を入力">
+    <button onclick="addWord()">追加</button>
+</div>
+
+<div id="wordList"></div>
+
+<script>
+
+let words = JSON.parse(localStorage.getItem("words")) || [];
+
+function displayWords() {
+
+    const list = document.getElementById("wordList");
+
+    list.innerHTML = "";
+
+    words.forEach((item, index) => {
+
+        const card = document.createElement("div");
+
+        card.className = "card";
+
+        card.innerHTML = `
+            <div class="word">${item.word}</div>
+            <div class="meaning">${item.meaning}</div>
+        `;
+
+        list.appendChild(card);
+    });
+}
+
+function addWord() {
+
+    const input = document.getElementById("wordInput");
+
+    const word = input.value.trim();
+
+    if (word === "") return;
+
+    words.push({
+        word: word,
+        meaning: "日本語訳をここに追加"
+    });
+
+    localStorage.setItem("words", JSON.stringify(words));
+
+    input.value = "";
+
+    displayWords();
+}
+
+displayWords();
+
+</script>
+
+</body>
+</html>
