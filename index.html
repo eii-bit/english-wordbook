@@ -51,7 +51,6 @@
     }
     .panel.active { display: block; }
     
-    /* 入力フォーム (iPhoneズーム防止でfont-size 16px) */
     .input-form {
       display: flex;
       gap: 8px;
@@ -78,7 +77,6 @@
     }
     .btn-add:disabled { background: #999; }
 
-    /* 単語一覧 */
     .word-list { display: flex; flex-direction: column; gap: 10px; }
     .word-card {
       display: flex;
@@ -102,7 +100,6 @@
       font-size: 0.8rem;
     }
 
-    /* クイズ画面 */
     .quiz-box { text-align: center; }
     .quiz-word { font-size: 1.8rem; font-weight: bold; color: #1a73e8; margin: 15px 0 20px; }
     .options { display: grid; grid-template-columns: 1fr; gap: 10px; }
@@ -131,7 +128,6 @@
       width: 100%;
     }
 
-    /* データ同期セクション */
     .sync-box {
       margin-top: 24px;
       padding-top: 16px;
@@ -165,7 +161,6 @@
     <button class="tab-btn" onclick="switchTab('quiz')">復習クイズ</button>
   </div>
 
-  <!-- 単語一覧パネル -->
   <div id="panel-list" class="panel active">
     <div class="input-form">
       <input type="text" id="word-input" placeholder="英単語を入力 (例: apple)">
@@ -174,7 +169,6 @@
 
     <div id="word-list" class="word-list"></div>
 
-    <!-- 端末間データ移行（iPad ⇔ iPhone） -->
     <div class="sync-box">
       <div class="sync-title">iPad / iPhone 間のデータ共有</div>
       <div class="sync-btns">
@@ -184,7 +178,6 @@
     </div>
   </div>
 
-  <!-- クイズパネル -->
   <div id="panel-quiz" class="panel">
     <div class="quiz-box">
       <div id="quiz-area">
@@ -217,6 +210,7 @@
       }
     }
 
+    /* 自動翻訳（Google翻訳ベースに変更・iPhone対応強化） */
     async function addWord() {
       const input = document.getElementById('word-input');
       const addBtn = document.getElementById('add-btn');
@@ -227,21 +221,49 @@
       addBtn.disabled = true;
       addBtn.innerText = "翻訳中...";
 
-      try {
-        const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ja`);
-        const data = await res.json();
-        const translation = data.responseData.translatedText || "（訳が見つかりませんでした）";
+      let translation = "";
 
-        words.unshift({ id: Date.now(), en: text, ja: translation });
-        saveWords();
-        input.value = "";
-        renderList();
+      // 1. Google翻訳 API
+      try {
+        const res = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ja&dt=t&q=${encodeURIComponent(text)}`);
+        const data = await res.json();
+        if (data && data[0] && data[0][0] && data[0][0][0]) {
+          translation = data[0][0][0];
+        }
       } catch (e) {
-        alert("翻訳に失敗しました。");
-      } finally {
-        addBtn.disabled = false;
-        addBtn.innerText = "自動翻訳して追加";
+        console.log("Google Translate failed");
       }
+
+      // 2. 予備（MyMemory API）
+      if (!translation) {
+        try {
+          const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ja`);
+          const data = await res.json();
+          if (data && data.responseData && data.responseData.translatedText) {
+            translation = data.responseData.translatedText;
+          }
+        } catch (e) {
+          console.log("MyMemory failed");
+        }
+      }
+
+      // 3. 万が一通信エラー等の場合は直接入力画面を表示
+      if (!translation) {
+        translation = prompt(`「${text}」の自動翻訳が取得できませんでした。\n日本語訳を入力してください:`, "");
+        if (translation === null) {
+          addBtn.disabled = false;
+          addBtn.innerText = "自動翻訳して追加";
+          return;
+        }
+      }
+
+      words.unshift({ id: Date.now(), en: text, ja: translation || "（訳なし）" });
+      saveWords();
+      input.value = "";
+      renderList();
+
+      addBtn.disabled = false;
+      addBtn.innerText = "自動翻訳して追加";
     }
 
     function saveWords() {
@@ -271,7 +293,6 @@
       `).join('');
     }
 
-    /* クイズ機能 */
     function startQuiz() {
       const area = document.getElementById('quiz-area');
       if (words.length === 0) {
@@ -326,7 +347,6 @@
       document.getElementById('next-btn').style.display = 'block';
     }
 
-    /* データ移行（エクスポート / インポート） */
     function exportData() {
       if (words.length === 0) {
         alert("引き継ぐ単語がありません。");
@@ -334,7 +354,7 @@
       }
       const jsonStr = JSON.stringify(words);
       navigator.clipboard.writeText(jsonStr).then(() => {
-        alert("単語データをクリップボードにコピーしました！\n別の端末（iPhone等）で「データを読み込み」を押して貼り付けてください。");
+        alert("単語データをコピーしました！\n別の端末で「データを読み込み」を押して貼り付けてください。");
       }).catch(() => {
         prompt("以下のコードをすべてコピーしてください:", jsonStr);
       });
@@ -354,7 +374,7 @@
           throw new Error();
         }
       } catch (e) {
-        alert("データの読み込みに失敗しました。正しいコードを入力してください。");
+        alert("データの読み込みに失敗しました。");
       }
     }
 
